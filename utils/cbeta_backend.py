@@ -83,6 +83,59 @@ class CbetaClient:
         """Get statistics report."""
         return self._request("report/total")
 
+    def report_daily(self, page: int = 1) -> Dict:
+        """Get daily access statistics (paginated)."""
+        return self._request("report/daily", {"page": page})
+
+    def report_url(self, d1: str, d2: str) -> Dict:
+        """Get URL access statistics by date range.
+
+        Args:
+            d1: Start date (YYYY-MM-DD)
+            d2: End date (YYYY-MM-DD)
+        """
+        return self._request("report/url", {"d1": d1, "d2": d2})
+
+    def report_referer(self, d1: str, d2: str) -> Dict:
+        """Get referer statistics by date range.
+
+        Args:
+            d1: Start date (YYYY-MM-DD)
+            d2: End date (YYYY-MM-DD)
+        """
+        return self._request("report/referer", {"d1": d1, "d2": d2})
+
+    # ── Canons (Collections) ────────────────────────────────────────
+    def canons(self) -> Dict:
+        """Get list of all canons with UUID and work count."""
+        return self._request("canons")
+
+    # ── Asia Network API ────────────────────────────────────────────
+    def works_by_canon_uuid(self, uuid: str) -> Dict:
+        """Get all works in a canon by UUID."""
+        return self._request(f"api/collections/{uuid}/resources")
+
+    def juans_by_work_uuid(self, uuid: str) -> Dict:
+        """Get all juans for a work by UUID."""
+        return self._request(f"api/resources/{uuid}/sections")
+
+    def juan_content_by_uuid(self, uuid: str) -> Dict:
+        """Get juan content by UUID."""
+        return self._request(f"api/sections/{uuid}/content_units")
+
+    def juan_info_by_uuid(self, uuid: str) -> Dict:
+        """Get juan metadata by UUID."""
+        return self._request(f"api/sections/{uuid}")
+
+    # ── TextRef (DocuSky) ────────────────────────────────────────────
+    def textref_meta(self) -> Dict:
+        """Get TextRef metadata for CBETA."""
+        return self._request("textref/meta")
+
+    def textref_data(self) -> Dict:
+        """Get TextRef data as CSV for DocuSky integration."""
+        return self._request("textref/data")
+
     # ── Search ──────────────────────────────────────────────────────
     def search(self, q: str, **kwargs) -> Dict:
         """Basic search.
@@ -109,10 +162,39 @@ class CbetaClient:
         return self._request("search/all_in_one", params)
 
     def search_kwic(self, q: str, **kwargs) -> Dict:
-        """KWIC (Key Word In Context) search."""
+        """KWIC (Key Word In Context) search.
+
+        Args:
+            q: Query string (required)
+            work: Work ID filter
+            juan: Juan number filter
+            around: Context lines around matches (default 10)
+            rows: Number of results
+            mark: Enable marking (1/0)
+            seg: Enable segmentation (1/0)
+            place: Enable place info (1/0)
+            kwic_w_punc: KWIC with punctuation (1/0)
+            kwic_wo_punc: KWIC without punctuation (1/0)
+            note: Include inline notes (default true)
+        """
         params = {"q": q}
         params.update(kwargs)
         return self._request("search/kwic", params)
+
+    def kwic_extended(self, q: str, **kwargs) -> Dict:
+        """Extended KWIC - returns hits for all keywords."""
+        params = {"q": q}
+        params.update(kwargs)
+        return self._request("kwic/extended", params)
+
+    def kwic_juan(self, q: str, work: str, juan: int, **kwargs) -> Dict:
+        """KWIC search within specific work/juan.
+
+        Supports NEAR syntax: "词1" NEAR/7 "词2"
+        """
+        params = {"q": q, "work": work, "juan": juan}
+        params.update(kwargs)
+        return self._request("kwic/juan", params)
 
     def search_facet(self, facet_by: str, q: Optional[str] = None, **kwargs) -> Dict:
         """Facet search for statistics."""
@@ -147,6 +229,30 @@ class CbetaClient:
         params = {"q": q}
         params.update(kwargs)
         return self._request("search/variants", params)
+
+    def search_extended(self, q: str, **kwargs) -> Dict:
+        """Boolean search (supports |, -, AND, OR, NOT)."""
+        params = {"q": q}
+        params.update(kwargs)
+        return self._request("search/extended", params)
+
+    def search_fuzzy(self, q: str, **kwargs) -> Dict:
+        """Fuzzy search for approximate matches."""
+        params = {"q": q}
+        params.update(kwargs)
+        return self._request("search/fuzzy", params)
+
+    def search_synonym(self, q: str, **kwargs) -> Dict:
+        """Synonym search for related concepts."""
+        params = {"q": q}
+        params.update(kwargs)
+        return self._request("search/synonym", params)
+
+    def search_sc(self, q: str, **kwargs) -> Dict:
+        """Search with simplified Chinese (auto converts to traditional)."""
+        params = {"q": q}
+        params.update(kwargs)
+        return self._request("search/sc", params)
 
     # ── Works ───────────────────────────────────────────────────────
     def works(self, **kwargs) -> Dict:
@@ -233,19 +339,58 @@ class CbetaClient:
         """Export all creators list."""
         return self._request("export/all_creators")
 
+    def export_all_creators2(self) -> Dict:
+        """Export all creators with aliases."""
+        return self._request("export/all_creators2")
+
+    def export_all_creators3(self) -> Dict:
+        """Export all creators with aliases (version 3)."""
+        return self._request("export/all_creators3")
+
     def export_dynasty(self) -> Dict:
         """Export dynasty information."""
         return self._request("export/dynasty")
 
+    def export_dynasty_works(self) -> Dict:
+        """Export dynasty-works relationship data."""
+        return self._request("export/dynasty_works")
+
+    def export_creator_strokes(self) -> Dict:
+        """Export creators sorted by stroke count."""
+        return self._request("export/creator_strokes")
+
+    def export_creator_strokes_works(self) -> Dict:
+        """Export creators by strokes with their works."""
+        return self._request("export/creator_strokes_works")
+
+    def export_check_list(self, canon: str = "J") -> Dict:
+        """Export check list CSV for a canon."""
+        return self._request("export/check_list", {"canon": canon})
+
+    def export_scope_selector_by_category(self) -> Dict:
+        """Export scope selector organized by category."""
+        return self._request("export/scope_selector_by_category")
+
+    def export_scope_selector_by_vol(self, **kwargs) -> Dict:
+        """Export scope selector organized by volume."""
+        return self._request("export/scope_selector_by_vol", kwargs)
+
     # ── Chinese Tools ────────────────────────────────────────────────
     def sc2tc(self, text: str) -> Dict:
         """Simplified Chinese to Traditional Chinese conversion."""
-        return self._request("chinese_tools/sc2tc", {"text": text})
+        return self._request("chinese_tools/sc2tc", {"q": text})
 
     # ── Word Segmentation ────────────────────────────────────────────
     def word_seg(self, text: str) -> Dict:
-        """Word segmentation."""
-        return self._request("word_seg", {"text": text})
+        """Word segmentation (text format)."""
+        return self._request("word_seg", {"t": text})
+
+    def word_seg_json(self, payload: str) -> Dict:
+        """Word segmentation (JSON format).
+
+        Returns: {"segmented": [...]}
+        """
+        return self._request("word_seg/run", {"payload": payload})
 
     # ── Changes ──────────────────────────────────────────────────────
     def changes(self, **kwargs) -> Dict:

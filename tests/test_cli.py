@@ -25,7 +25,7 @@ class TestCliMain:
     def test_cli_version(self):
         """测试版本信息."""
         from cli_anything.cbeta import __version__
-        assert __version__ == "2.6.0"
+        assert __version__ == "2.7.0"
 
 
 class TestSearchCommands:

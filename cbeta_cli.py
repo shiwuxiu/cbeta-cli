@@ -409,6 +409,93 @@ def search_variants(query, rows):
     output(result, f"异体字搜索 '{query}' 找到 {result.get('num_found', 0)} 条结果")
 
 
+@search.command("extended")
+@click.argument("query")
+@click.option("--rows", "-r", type=int, default=10, help="返回结果数量")
+@click.option("--canon", "-c", default=None, help="藏经筛选")
+@click.option("--category", default=None, help="部类筛选")
+@handle_error
+def search_extended(query, rows, canon, category):
+    """布林搜索（支持 AND/OR/NOT）。
+
+    支持布尔运算符：
+    - | 或 OR: 并集搜索
+    - - 或 NOT: 排除搜索
+
+    示例:
+        search extended "般若 | 金刚"
+        search extended "心经 -般若"
+        search extended "佛 AND 法" --canon T
+    """
+    params = {"rows": rows}
+    if canon:
+        params["canon"] = canon
+    if category:
+        params["category"] = category
+    result = get_client().search_extended(query, **params)
+    output(result, f"布林搜索 '{query}' 找到 {result.get('num_found', 0)} 条结果")
+
+
+@search.command("fuzzy")
+@click.argument("query")
+@click.option("--rows", "-r", type=int, default=10, help="返回结果数量")
+@click.option("--canon", "-c", default=None, help="藏经筛选")
+@handle_error
+def search_fuzzy(query, rows, canon):
+    """模糊搜索。
+
+    用于处理不确定的查询，允许部分匹配。
+
+    示例:
+        search fuzzy "般若波罗蜜"
+        search fuzzy "金刚经" --canon T
+    """
+    params = {"rows": rows}
+    if canon:
+        params["canon"] = canon
+    result = get_client().search_fuzzy(query, **params)
+    output(result, f"模糊搜索 '{query}' 找到 {result.get('num_found', 0)} 条结果")
+
+
+@search.command("synonym")
+@click.argument("query")
+@click.option("--rows", "-r", type=int, default=10, help="返回结果数量")
+@handle_error
+def search_synonym(query, rows):
+    """同义词搜索。
+
+    搜索概念相关的同义词，发现关联词汇。
+
+    示例:
+        search synonym "佛"
+        search synonym "智慧"
+    """
+    result = get_client().search_synonym(query, rows=rows)
+    output(result, f"同义词搜索 '{query}'")
+
+
+@search.command("sc")
+@click.argument("query")
+@click.option("--rows", "-r", type=int, default=10, help="返回结果数量")
+@click.option("--canon", "-c", default=None, help="藏经筛选")
+@handle_error
+def search_sc(query, rows, canon):
+    """简体中文搜索（自动转繁体）。
+
+    输入简体中文关键词，自动转换为繁体后搜索。
+    方便简体用户查询。
+
+    示例:
+        search sc "金刚经"
+        search sc "心经" --canon T
+    """
+    params = {"rows": rows}
+    if canon:
+        params["canon"] = canon
+    result = get_client().search_sc(query, **params)
+    output(result, f"简体搜索 '{query}' 找到 {result.get('num_found', 0)} 条结果")
+
+
 @search.command("facet")
 @click.argument("query", required=False)
 @click.option("--by", "-b", "facet_by", default="canon", help="分面统计字段 (canon, category, dynasty)")
@@ -817,6 +904,98 @@ def server_changes(work, date):
     output(result, "数据变更历史")
 
 
+@server.command("report-daily")
+@click.option("--page", "-p", type=int, default=1, help="页码")
+@handle_error
+def server_report_daily(page):
+    """获取每日访问统计。
+
+    示例:
+        server report-daily
+        server report-daily --page 2
+    """
+    result = get_client().report_daily(page=page)
+    output(result, f"每日访问统计（第 {page} 页）")
+
+
+@server.command("report-url")
+@click.option("--start", "-s", required=True, help="起始日期 (YYYY-MM-DD)")
+@click.option("--end", "-e", required=True, help="结束日期 (YYYY-MM-DD)")
+@handle_error
+def server_report_url(start, end):
+    """获取 URL 访问统计。
+
+    示例:
+        server report-url --start 2024-01-01 --end 2024-01-31
+    """
+    result = get_client().report_url(start, end)
+    output(result, f"URL 访问统计 ({start} - {end})")
+
+
+@server.command("report-referer")
+@click.option("--start", "-s", required=True, help="起始日期 (YYYY-MM-DD)")
+@click.option("--end", "-e", required=True, help="结束日期 (YYYY-MM-DD)")
+@handle_error
+def server_report_referer(start, end):
+    """获取来源访问统计。
+
+    示例:
+        server report-referer --start 2024-01-01 --end 2024-01-31
+    """
+    result = get_client().report_referer(start, end)
+    output(result, f"来源访问统计 ({start} - {end})")
+
+
+# ──────────────────────────────────────────────────────────────────
+# 藏经命令组 (Canons Commands)
+# ──────────────────────────────────────────────────────────────────
+@cli.group()
+def canons():
+    """藏经命令组 - 查询各藏经信息。"""
+    pass
+
+
+@canons.command("list")
+@handle_error
+def canons_list():
+    """列出所有藏经。
+
+    显示各藏经的 UUID、名称和作品数量。
+    """
+    result = get_client().canons()
+    output(result, f"藏经列表（共 {len(result) if isinstance(result, list) else result.get('num_found', 0)} 个）")
+
+
+@canons.command("works")
+@click.argument("uuid")
+@click.option("--rows", "-r", type=int, default=20, help="返回数量")
+@handle_error
+def canons_works(uuid, rows):
+    """列出指定藏经的所有作品。
+
+    使用 Asia Network API 查询。
+
+    示例:
+        canons works <uuid>
+    """
+    result = get_client().works_by_canon_uuid(uuid)
+    output(result, f"藏经 {uuid} 作品列表")
+
+
+@canons.command("info")
+@click.argument("uuid")
+@handle_error
+def canons_info(uuid):
+    """显示藏经详细信息。"""
+    result = get_client().canons()
+    if isinstance(result, list):
+        for canon in result:
+            if canon.get("uuid") == uuid:
+                output(canon, f"藏经 {uuid} 信息")
+                return
+    output({"error": "未找到该藏经"}, "错误")
+
+
 # ──────────────────────────────────────────────────────────────────
 # 导出命令组 (Export Commands)
 # ──────────────────────────────────────────────────────────────────
@@ -874,6 +1053,158 @@ def export_strokes(creator):
     """
     result = get_client()._request("export/creator_strokes", {"creator": creator} if creator else {})
     output(result, "导出笔画数据")
+
+
+@export.command("strokes-works")
+@handle_error
+def export_strokes_works():
+    """导出按笔画排序的作译者（带作品）。
+
+    包含作品信息的笔画排序作译者列表。
+    """
+    result = get_client().export_creator_strokes_works()
+    output(result, "导出笔画排序作译者（带作品）")
+
+
+@export.command("dynasty-works")
+@handle_error
+def export_dynasty_works():
+    """导出朝代-作品关联数据。
+
+    各朝代作品数量及详情统计。
+    """
+    result = get_client().export_dynasty_works()
+    output(result, "导出朝代作品数据")
+
+
+@export.command("creators2")
+@handle_error
+def export_creators2():
+    """导出作译者列表（带别名）。
+
+    导出包含别名信息的作译者列表。
+    """
+    result = get_client().export_all_creators2()
+    output(result, "导出作译者数据（带别名）")
+
+
+@export.command("creators3")
+@handle_error
+def export_creators3():
+    """导出作译者列表（带别名版本3）。"""
+    result = get_client().export_all_creators3()
+    output(result, "导出作译者数据（别名版本3）")
+
+
+@export.command("check-list")
+@click.option("--canon", "-c", default="J", help="藏经编号 (默认 J)")
+@handle_error
+def export_check_list(canon):
+    """导出检查清单 CSV。
+
+    导出指定藏经的检查清单。
+    """
+    result = get_client().export_check_list(canon)
+    output(result, f"导出 {canon} 藏检查清单")
+
+
+@export.command("scope-category")
+@handle_error
+def export_scope_category():
+    """导出按部类的范围选择器。"""
+    result = get_client().export_scope_selector_by_category()
+    output(result, "导出部类范围选择器")
+
+
+@export.command("scope-vol")
+@click.option("--canon", "-c", default=None, help="藏经筛选")
+@handle_error
+def export_scope_vol(canon):
+    """导出按册号的范围选择器。"""
+    params = {}
+    if canon:
+        params["canon"] = canon
+    result = get_client().export_scope_selector_by_vol(**params)
+    output(result, "导出册号范围选择器")
+
+
+# ──────────────────────────────────────────────────────────────────
+# TextRef 命令组 (TextRef Commands)
+# ──────────────────────────────────────────────────────────────────
+@cli.group()
+def textref():
+    """TextRef 命令组 - DocuSky 集成接口。"""
+    pass
+
+
+@textref.command("meta")
+@handle_error
+def textref_meta():
+    """获取 TextRef 元数据。
+
+    用于 DocuSky 系统集成的 CBETA 元数据。
+    """
+    result = get_client().textref_meta()
+    output(result, "TextRef 元数据")
+
+
+@textref.command("data")
+@handle_error
+def textref_data():
+    """导出 TextRef 数据 CSV。
+
+    用于 DocuSky 系统下载 CBETA 数据。
+    """
+    result = get_client().textref_data()
+    output(result, "TextRef 数据")
+
+
+# ──────────────────────────────────────────────────────────────────
+# Asia Network API 命令组
+# ──────────────────────────────────────────────────────────────────
+@cli.group()
+def asia():
+    """Asia Network API 命令组 - UUID 接口。"""
+    pass
+
+
+@asia.command("juans")
+@click.argument("uuid")
+@handle_error
+def asia_juans(uuid):
+    """获取作品的卷列表（UUID）。
+
+    示例:
+        asia juans <work_uuid>
+    """
+    result = get_client().juans_by_work_uuid(uuid)
+    output(result, f"作品 {uuid} 卷列表")
+
+
+@asia.command("juan-content")
+@click.argument("uuid")
+@handle_error
+def asia_juan_content(uuid):
+    """获取卷内容（UUID）。
+
+    示例:
+        asia juan-content <juan_uuid>
+    """
+    result = get_client().juan_content_by_uuid(uuid)
+    output(result, f"卷 {uuid} 内容")
+
+
+@asia.command("juan-info")
+@click.argument("uuid")
+@handle_error
+def asia_juan_info(uuid):
+    """获取卷元数据（UUID）。
+
+    示例:
+        asia juan-info <juan_uuid>
+    """
+    result = get_client().juan_info_by_uuid(uuid)
+    output(result, f"卷 {uuid} 元数据")
 
 
 # ──────────────────────────────────────────────────────────────────

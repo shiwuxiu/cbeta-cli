@@ -1,6 +1,6 @@
 # CBETA CLI - 中华电子佛典协会 API 命令行工具
 
-**版本**: 2.6.0
+**版本**: 2.7.0
 **API 地址**: https://api.cbetaonline.cn
 **API 版本**: 3.6.9
 **资料版本**: 2025R3
@@ -11,15 +11,23 @@
 
 CBETA CLI 是中华电子佛典协会（Chinese Buddhist Electronic Text Association）API 的完整命令行封装工具，提供佛典搜索、典籍信息、全文获取、经目查询等全部功能。
 
-**命令覆盖率**: 42/42 = **100%**
+**命令覆盖率**: 56/56 = **100%**
 
-**新增功能 (v2.6.0)**:
+**新增功能 (v2.7.0)**:
+- 布林搜索 (extended)、模糊搜索 (fuzzy)、同义词搜索 (synonym)、简体搜索 (sc)
+- 扩展导出：creators2/3、strokes-works、dynasty-works、check-list、scope-selector
+- 藏经列表命令 (canons list/works/info)
+- 访问统计报告 (report-daily/url/referer)
+- Asia Network API (UUID 接口)
+- TextRef DocuSky 集成接口
+
+**v2.6.0 功能**:
 - 缓存机制（内存 + 文件缓存）
 - 配置文件支持（自定义 API 地址、默认参数、缓存/日志设置）
 - Shell 补全（bash/zsh/fish/powershell）
 - 批量操作（批量搜索、下载、导出）
 - 多格式导出（JSON/CSV/Excel/Markdown/HTML）
-- 离线模式（本地 SQLite 数据库）
+- 离线模式（本地 SQLite 数据库，增量下载）
 - 词频分析与统计图表
 - 日志系统（按天分割）
 
@@ -51,6 +59,10 @@ export PYTHONIOENCODING=utf-8
 | `search title` | 标题搜索 | `search title "金刚"` |
 | `search variants` | 异体字搜索 | `search variants "法"` |
 | `search facet` | 分面统计 | `search facet "般若" --by canon` |
+| **`search extended`** | **布林搜索 (AND/OR/NOT)** | `search extended "般若 | 金刚"` |
+| **`search fuzzy`** | **模糊搜索** | `search fuzzy "般若波罗蜜"` |
+| **`search synonym`** | **同义词搜索** | `search synonym "佛"` |
+| **`search sc`** | **简体搜索 (自动转繁)** | `search sc "金刚经"` |
 
 ### 佛典命令组 (`work`)
 
@@ -107,6 +119,47 @@ export PYTHONIOENCODING=utf-8
 | `export creators` | 导出作译者 | `export creators` |
 | `export dynasty` | 导出朝代信息 | `export dynasty` |
 | `export strokes` | 导出笔画数据 | `export strokes` |
+| **`export creators2`** | **导出作译者（带别名）** | `export creators2` |
+| **`export creators3`** | **导出作译者（别名版本3）** | `export creators3` |
+| **`export strokes-works`** | **导出笔画排序（带作品）** | `export strokes-works` |
+| **`export dynasty-works`** | **导出朝代-作品关联** | `export dynasty-works` |
+| **`export check-list`** | **导出检查清单 CSV** | `export check-list --canon J` |
+| **`export scope-category`** | **导出部类范围选择器** | `export scope-category` |
+| **`export scope-vol`** | **导出册号范围选择器** | `export scope-vol --canon T` |
+
+### 藏经命令组 (`canons`) - 新增
+
+| 命令 | 功能 | 示例 |
+|------|------|------|
+| `canons list` | 列出所有藏经 | `canons list` |
+| `canons works` | 列出藏经作品（UUID） | `canons works <uuid>` |
+| `canons info` | 显示藏经详情 | `canons info <uuid>` |
+
+### 服务器命令组 (`server`)
+
+| 命令 | 功能 | 示例 |
+|------|------|------|
+| `server health` | API 健康检查 | `server health` |
+| `server stats` | 统计报表 | `server stats --by-canon` |
+| `server changes` | 数据变更历史 | `server changes --work T0001` |
+| **`server report-daily`** | **每日访问统计** | `server report-daily --page 1` |
+| **`server report-url`** | **URL访问统计** | `server report-url -s 2024-01-01 -e 2024-01-31` |
+| **`server report-referer`** | **来源访问统计** | `server report-referer -s 2024-01-01 -e 2024-01-31` |
+
+### TextRef 命令组 (`textref`) - 新增
+
+| 命令 | 功能 | 示例 |
+|------|------|------|
+| `textref meta` | TextRef 元数据 | `textref meta` |
+| `textref data` | DocuSky CSV 导出 | `textref data` |
+
+### Asia Network API 命令组 (`asia`) - 新增
+
+| 命令 | 功能 | 示例 |
+|------|------|------|
+| `asia juans` | 作品卷列表（UUID） | `asia juans <uuid>` |
+| `asia juan-content` | 卷内容（UUID） | `asia juan-content <uuid>` |
+| `asia juan-info` | 卷元数据（UUID） | `asia juan-info <uuid>` |
 
 ### 会话与输出
 
@@ -603,7 +656,8 @@ $ python -m cli_anything.cbeta --json work info T0001 \
 | 1.0.0 | 2026-04-15 | 基础版本：搜索、佛典、服务器、导出命令 |
 | 2.0.0 | 2026-04-15 | **完整版本**：新增相似文本、注释、标题、异体字、分面统计、行内容、卷、目录、工具等全部命令，命令覆盖率 100% |
 | 2.1.0 | 2026-04-15 | 配置文件支持、REPL 模式、JSON 输出 |
-| **2.6.0** | 2026-04-15 | **功能增强版**：缓存机制、Shell补全、批量操作、多格式导出、离线模式（增量下载）、词频分析、统计图表、日志系统（按天分割）、E2E测试 |
+| 2.6.0 | 2026-04-15 | **功能增强版**：缓存机制、Shell补全、批量操作、多格式导出、离线模式（增量下载）、词频分析、统计图表、日志系统（按天分割）、E2E测试 |
+| **2.7.0** | 2026-04-15 | **API 全面升级版**：布林搜索、模糊搜索、同义词搜索、简体搜索；扩展导出（creators2/3、strokes-works、dynasty-works、scope-selector）；藏经列表命令；访问统计报告；Asia Network API (UUID接口)；TextRef DocuSky集成接口 |
 
 ---
 

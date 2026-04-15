@@ -284,7 +284,7 @@ class TestCbetaClientTools:
         result = client.sc2tc("法华经")
 
         call_params = mock_get.call_args[1]["params"]
-        assert call_params["text"] == "法华经"
+        assert call_params["q"] == "法华经"
 
     @patch("cli_anything.cbeta.utils.cbeta_backend.requests.Session.get")
     def test_word_seg(self, mock_get):
@@ -298,7 +298,7 @@ class TestCbetaClientTools:
         result = client.word_seg("般若波罗蜜多心经")
 
         call_params = mock_get.call_args[1]["params"]
-        assert call_params["text"] == "般若波罗蜜多心经"
+        assert call_params["t"] == "般若波罗蜜多心经"
 
 
 class TestCbetaClientLines:
