@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cli-anything-cbeta"
+version = "2.6.0"
+description = "CBETA API CLI - 中华电子佛典协会命令行工具"
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.0",
+    "requests>=2.28",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+export = [
+    "openpyxl>=3.0",
+]
+charts = [
+    "matplotlib>=3.5",
+    "wordcloud>=1.8",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+
+[project.scripts]
+cli-anything-cbeta = "cli_anything.cbeta:main"
+
+[tool.setuptools.packages.find]
+include = ["cli_anything.cbeta*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+markers = [
+    "e2e: End-to-end tests with real API",
+]
+filterwarnings = [
+    "ignore::urllib3.exceptions.InsecureRequestWarning",
+    "ignore::requests.packages.urllib3.exceptions.InsecureRequestWarning",
+]
+
+[tool.coverage.run]
+source = ["cli_anything.cbeta"]
+branch = true
+omit = [
+    "tests/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+show_missing = true
+
+[tool.coverage.html]
+directory = "htmlcov"
